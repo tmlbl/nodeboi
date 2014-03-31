@@ -2,69 +2,136 @@ module.exports = function (grunt) {
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
     watch: {
+      js: {
+        files: ['src/scripts/**'],
+        tasks: ['concat:dev'],
+        options: {
+          livereload: true
+        }
+      },
+      scss: {
+        files: ['src/styles/**'],
+        tasks: ['sass:dev'],
+        options: {
+          livereload: true
+        }
+      },
       views: {
         files: ['app/views/**'],
         options: {
           livereload: true
         }
       },
-      scripts: {
-        files: ['app/scripts/**'],
-        tasks: ['concat:js', 'uglify:js'],
+      express: {
+        files: ['server.js', 'app/**'],
+        tasks: ['express:dev'],
         options: {
-          livereload: true
+          spawn: false
         }
+      }
+    },
+    env: {
+      options: {},
+      dev: {
+        NODE_ENV: 'dev'
       },
-      styles: {
-        files: ['app/styles/**'],
-        tasks: ['sass', 'concat:css', 'cssmin'],
-        options: {
-          livereload: true
-        }
+      test: {
+        NODE_ENV: 'test'
       }
     },
     sass: {
-      dist: {
-        files: [{
-          expand: true,
-          cwd: 'app/styles',
-          src: ['*.scss'],
-          dest: 'app/styles/compiled',
-          ext: '.css'
-        }]
+      dev: {
+        files: {'public/styles.css': 'src/styles/main.scss'}
+      },
+      build: {
+        files: {'public/styles.css': 'src/styles/main.scss'}
       }
     },
     concat: {
-      js: {
-        src: ['app/scripts/*.js'],
-        dest: 'public/js/main.js'
-      },
-      css: {
-        src: ['app/styles/compiled/*.css'],
-        dest: 'public/css/main.css'
+      dev: {
+        src: [
+          'src/scripts/index.js'
+        ],
+        dest: 'public/app.js'
       }
     },
-    uglify: {
-      js: {
-        src: ['public/js/main.js'],
-        dest: 'public/dist/main.min.js'
+    express: {
+      options: {},
+      dev: {
+        options: {
+          script: 'server.js'
+        }
+      },
+      test: {
+        options: {
+          script: 'server.js'
+        }
+      }
+    },
+    casper: {
+      all: {
+        options: {
+          test: true
+        },
+        files: {
+          'test/casper/results.xml' : ['test/casper/*.js']
+        }
+      }
+    },
+    simplemocha: {
+      options: {
+        reporter: 'spec',
+        slow: 200,
+        timeout: 1000,
+        node_env: 'test'
+      },
+      all: {
+        src: ['test/mocha/*.js']
+      }
+    },
+    mongoimport: {
+      options: {
+        db: 'test',
+        host: 'localhost',
+        stopOnError: false,
+        collections: [
+          {
+            name: 'things',
+            type: 'json',
+            file: 'db/seeds/things.json',
+            jsonArray: true,
+            upsert: true,
+            drop: true
+          }
+        ]
       }
     },
     cssmin: {
-      minify: {
-        expand: true,
-        cwd: 'public/css/',
-        src: ['*.css', '!*.min.css'],
-        dest: 'public/dist',
-        ext: '.min.css'
+      build: {
+        files: {
+          'public/styles.min.css': ['public/styles.css']
+        }
+      }
+    },
+    uglify: {
+      build: {
+        files: {
+          'public/app.min.js': ['public/app.js']
+        }
       }
     }
   });
   grunt.loadNpmTasks('grunt-contrib-watch');
-  grunt.loadNpmTasks('grunt-contrib-sass');
-  grunt.loadNpmTasks('grunt-contrib-concat');
+  grunt.loadNpmTasks('grunt-env');
+  grunt.loadNpmTasks('grunt-sass');
+  grunt.loadNpmTasks('grunt-casper');
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-contrib-cssmin');
-  grunt.registerTask('default', ['watch', 'sass']);
-  grunt.registerTask('build', ['sass', 'concat', 'uglify']);
+  grunt.loadNpmTasks('grunt-contrib-concat');
+  grunt.loadNpmTasks('grunt-mongoimport');
+  grunt.loadNpmTasks('grunt-express-server');
+  grunt.loadNpmTasks('grunt-simple-mocha');
+  grunt.registerTask('default', ['express:dev', 'watch', 'env:dev']);
+  grunt.registerTask('test', ['env:test', 'mongoimport', 'express:dev', 'casper:all', 'simplemocha:all']);
+  grunt.registerTask('build', ['concat:dev', 'sass:build', 'uglify:build', 'cssmin:build']);
 };
