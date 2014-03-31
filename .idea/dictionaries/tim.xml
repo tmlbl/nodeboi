@@ -1,9 +1,11 @@
 <component name="ProjectDictionaryState">
   <dictionary name="tim">
     <words>
+      <w>chai</w>
       <w>cssmin</w>
       <w>minify</w>
       <w>mongo</w>
+      <w>superagent</w>
       <w>uglify</w>
     </words>
   </dictionary>
